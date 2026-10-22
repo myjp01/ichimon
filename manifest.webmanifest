@@ -1,0 +1,22 @@
+{
+ "name": "証券化マスター 一問一答",
+ "short_name": "一問一答",
+ "start_url": "./",
+ "scope": "./",
+ "display": "standalone",
+ "background_color": "#f5f6f3",
+ "theme_color": "#f5f6f3",
+ "lang": "ja",
+ "icons": [
+  {
+   "src": "icon-180.png",
+   "sizes": "180x180",
+   "type": "image/png"
+  },
+  {
+   "src": "icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png"
+  }
+ ]
+}

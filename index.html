@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="一問一答">
+<meta name="theme-color" content="#f5f6f3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12161d" media="(prefers-color-scheme: dark)">
+<meta name="robots" content="noindex,nofollow">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<title>証券化マスター 一問一答</title>
+<style>
+/* Layout: 片手で回す一画面アプリ。上に出典と設問、下に親指で押す ○ × の帯 */
+:root{
+  --paper:#f5f6f3; --card:#ffffff; --ink:#1d2433; --sub:#5d6677; --line:#dfe2e6;
+  --accent:#27406b; --accent-soft:#e6ebf4;
+  --ok:#17795f; --ok-soft:#e1f2ec; --ng:#b8432f; --ng-soft:#f8e6e2; --star:#b07a12;
+  --body:"BIZ UDPGothic","Hiragino Sans","Hiragino Kaku Gothic ProN",system-ui,sans-serif;
+  --display:"Zen Kaku Gothic New","Hiragino Sans",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#12161d; --card:#1b2029; --ink:#e7eaf0; --sub:#9aa3b2; --line:#2c3340;
+  --accent:#8fb0e8; --accent-soft:#222c3d;
+  --ok:#4cc29b; --ok-soft:#173129; --ng:#ef8a74; --ng-soft:#3a201b; --star:#e0b04a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#12161d; --card:#1b2029; --ink:#e7eaf0; --sub:#9aa3b2; --line:#2c3340;
+  --accent:#8fb0e8; --accent-soft:#222c3d;
+  --ok:#4cc29b; --ok-soft:#173129; --ng:#ef8a74; --ng-soft:#3a201b; --star:#e0b04a; color-scheme:dark}
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.75;-webkit-text-size-adjust:100%}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:640px;margin:0 auto;padding-inline:16px;padding-block:16px 140px}
+h1{font-family:var(--display);font-weight:900;font-size:1.45rem;line-height:1.3;margin:4px 0 2px;text-wrap:balance}
+.lede{color:var(--sub);font-size:.85rem;margin:0}
+.label{font-size:.75rem;letter-spacing:.06em;color:var(--sub);margin:0 0 8px;font-weight:700}
+section{margin-top:22px}
+
+/* ホーム */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.stat b{display:block;font-family:var(--display);font-size:1.35rem;font-variant-numeric:tabular-nums;line-height:1.2}
+.stat span{font-size:.72rem;color:var(--sub)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 12px;font-size:.85rem;line-height:1.3}
+.chip small{color:var(--sub);margin-left:4px;font-variant-numeric:tabular-nums}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--card)}
+.chip[aria-pressed="true"] small{color:inherit;opacity:.8}
+select{width:100%;font:inherit;font-size:1rem;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.modes{display:grid;gap:8px}
+.mode{display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.mode[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--accent-soft)}
+.mode b{font-size:.95rem}
+.mode span{font-size:.78rem;color:var(--sub);display:block;line-height:1.4}
+.mode em{font-style:normal;font-variant-numeric:tabular-nums;font-weight:700;color:var(--accent);white-space:nowrap}
+.note{font-size:.75rem;color:var(--sub);line-height:1.6;margin-top:24px}
+.linkbtn{background:none;border:0;padding:0;color:var(--sub);text-decoration:underline;font-size:.75rem}
+
+/* 下の帯 */
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--paper);border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}
+.bar .in{max-width:640px;margin:0 auto;display:flex;gap:10px}
+.big{flex:1;border:0;border-radius:14px;padding:14px 0;font-family:var(--display);font-weight:900;font-size:1.15rem;background:var(--accent);color:var(--card)}
+.big:disabled{opacity:.4}
+.ans{flex:1;border-radius:14px;padding:10px 0;font-family:var(--display);font-weight:900;font-size:2.1rem;line-height:1.1;border:2px solid}
+.ans small{display:block;font-family:var(--body);font-size:.72rem;font-weight:700;letter-spacing:.04em}
+.ans.o{color:var(--ok);border-color:var(--ok);background:var(--ok-soft)}
+.ans.x{color:var(--ng);border-color:var(--ng);background:var(--ng-soft)}
+
+/* 出題 */
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.top .back{background:none;border:0;color:var(--sub);font-size:.85rem;padding:4px 0}
+.prog{font-variant-numeric:tabular-nums;font-size:.85rem;color:var(--sub)}
+.track{height:4px;background:var(--line);border-radius:4px;margin-top:8px;overflow:hidden}
+.track i{display:block;height:100%;background:var(--accent);width:0;transition:width .25s}
+.src{font-size:.75rem;color:var(--sub);margin-top:16px;line-height:1.5}
+.src b{color:var(--accent)}
+.lead{font-size:.85rem;color:var(--sub);margin:8px 0 0;line-height:1.6}
+.q{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:10px;font-size:1.05rem;line-height:1.85}
+.q .lab{font-family:var(--display);font-weight:900;color:var(--accent);margin-right:6px}
+.result{margin-top:14px;border-radius:12px;padding:14px 16px;border:1px solid}
+.result.ok{background:var(--ok-soft);border-color:var(--ok)}
+.result.ng{background:var(--ng-soft);border-color:var(--ng)}
+.result h2{margin:0;font-family:var(--display);font-size:1.1rem;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.result.ok h2{color:var(--ok)} .result.ng h2{color:var(--ng)}
+.result h2 span{font-family:var(--body);font-size:.85rem;color:var(--ink);font-weight:700}
+.why{margin:8px 0 0;font-size:.95rem;line-height:1.8}
+.why b{background:linear-gradient(transparent 60%,var(--accent-soft) 60%)}
+.tools{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.tool{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 12px;font-size:.8rem}
+.tool[aria-pressed="true"]{color:var(--star);border-color:var(--star)}
+.full{margin-top:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:.85rem;line-height:1.7}
+.full p{margin:0 0 6px}
+.full .cur{background:var(--accent-soft);border-radius:6px;padding:2px 4px;margin-inline:-4px}
+.hist{font-size:.75rem;color:var(--sub);margin-top:10px}
+
+/* 結果 */
+.score{font-family:var(--display);font-weight:900;font-size:3rem;line-height:1;font-variant-numeric:tabular-nums;margin-top:20px}
+.score small{font-size:1rem;color:var(--sub);margin-left:6px}
+.list{display:grid;gap:8px;margin-top:12px}
+.row{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--ng);border-radius:8px;padding:10px 12px;font-size:.85rem;line-height:1.6}
+.row.ok{border-left-color:var(--ok)}
+.row .s{font-size:.72rem;color:var(--sub)}
+/* 文言検索 */
+.search{position:relative;margin-top:18px}
+.search input{width:100%;font:inherit;font-size:16px;padding:12px 44px 12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);-webkit-appearance:none;appearance:none}
+.search input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.search input::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none;display:none}
+.sqx{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--sub);font-size:1.3rem;width:36px;height:36px;line-height:1}
+.shead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:14px}
+.shead b{font-variant-numeric:tabular-nums}
+.hits{display:grid;gap:8px;margin-top:8px}
+.hit{background:var(--card);border:1px solid var(--line);border-radius:10px}
+.hitbtn{display:block;width:100%;text-align:left;background:none;border:0;padding:10px 12px;font-size:.88rem;line-height:1.65}
+.hitbtn .s{font-size:.72rem;color:var(--sub);display:block}
+.hitbtn .hw{display:block;font-size:.8rem;color:var(--sub);margin-top:4px}
+.ox{display:inline-block;min-width:1.6em;text-align:center;font-family:var(--display);font-weight:900;border-radius:6px;margin-right:6px;padding:0 4px}
+.ox.o{color:var(--ok);background:var(--ok-soft)} .ox.x{color:var(--ng);background:var(--ng-soft)}
+mark{background:var(--accent-soft);color:var(--ink);border-bottom:2px solid var(--accent);padding:0 1px}
+.hexp{border-top:1px solid var(--line);padding:10px 12px;font-size:.85rem;line-height:1.75}
+.hexp p{margin:0 0 6px}
+.hexp b{background:linear-gradient(transparent 60%,var(--accent-soft) 60%)}
+.more{width:100%;margin-top:10px;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:10px;font-size:.85rem;color:var(--accent)}
+.hint{font-size:.75rem;color:var(--sub);margin:12px 0 0}
+.ctx{margin-top:10px;border-left:3px solid var(--line);padding:2px 0 2px 12px;font-size:.85rem;line-height:1.7;color:var(--sub)}
+.ctx p{margin:0 0 6px}
+.ctx .label{margin-bottom:4px}
+.big.ok{background:var(--ok)} .big.ng{background:var(--ng)}
+.scope{font-size:.75rem;color:var(--sub);margin:14px 0 0}
+.banner{display:block;width:100%;margin-top:12px;text-align:left;border:1px solid var(--accent);background:var(--accent-soft);color:var(--ink);border-radius:10px;padding:10px 12px;font-size:.85rem}
+@media (prefers-reduced-motion:reduce){.track i{transition:none}}
+</style>
+
+<div class="wrap" id="app"></div>
+<div class="bar"><div class="in" id="bar"></div></div>
+
+<script>
+function main(DATA){
+const SUBJ = {"101":"企業と不動産","102":"証券化の概要","103":"不動産投資の基礎","104":"法務・会計・税務","105":"ファイナンス","106":"倫理行動"};
+const KEY = "sm-ichimon-v1";
+const cards = DATA.cards, byId = {};
+cards.forEach(c => byId[c.id] = c);
+
+let store = {h:{}, star:{}, pref:{subj:[], unit:"", mode:"rand", n:20}};
+function load(){
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY) || "null");
+    if (s) store = {h: s.h || {}, star: s.star || {}, pref: Object.assign({subj:[], unit:"", mode:"rand", n:20}, s.pref)};
+  } catch(e){}
+  if (!Array.isArray(store.pref.subj)) store.pref.subj = [];
+}
+load();
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(store)); } catch(e){} }
+
+const $app = document.getElementById("app"), $bar = document.getElementById("bar");
+let barAt = 0, view = "home";
+/* 下の帯のボタンは押した場所に次のボタンが出るので、続けて2回タップしても2回目は無視する */
+const setBarHTML = html => { $bar.innerHTML = html; barAt = performance.now(); };
+const tap = fn => e => { if (performance.now() - barAt < 350) return; fn(e); };
+const esc = s => String(s).replace(/[&<>"]/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+const shuffle = a => { for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+const qkey = c => c.id.slice(0, c.id.lastIndexOf("-"));
+const srcText = c => `${c.y}年 ${c.s} 問${c.n}　${c.subj} ${SUBJ[c.subj]}／${c.uname}`;
+
+function inScope(){
+  const p = store.pref;
+  return cards.filter(c => (!p.subj.length || p.subj.includes(c.subj)) && (!p.unit || c.unit === p.unit));
+}
+const MODES = [
+  ["rand","ランダム","範囲の中からまんべんなく", a => a],
+  ["new","まだ解いていない肢","一度も答えていないものだけ", a => a.filter(c => !store.h[c.id])],
+  ["miss","前回まちがえた肢","最後の回答が不正解のもの", a => a.filter(c => store.h[c.id] && !store.h[c.id][2])],
+  ["weak","一度でもまちがえた肢","いまは正解でも、過去に落としたもの", a => a.filter(c => store.h[c.id] && store.h[c.id][1] > 0)],
+  ["star","★見直しリスト","自分で印をつけた肢", a => a.filter(c => store.star[c.id])],
+];
+if (!MODES.some(m => m[0] === store.pref.mode)) store.pref.mode = "rand";
+
+/* ---------- 文言検索 ---------- */
+let searchQ = "", shown = 60, HAY = null;
+const stripTags = s => s.replace(/<[^>]+>/g, "");
+const terms = q => q.normalize("NFKC").toLowerCase().split(/\s+/).filter(Boolean);
+function search(q){
+  const ts = terms(q); if (!ts.length) return [];
+  if (!HAY) HAY = cards.map(c => [c.q, c.lead, stripTags(c.why), c.uname, c.item, `${c.y}年${c.s}問${c.n}`].join("\n").normalize("NFKC").toLowerCase());
+  return cards.filter((c, i) => ts.every(t => HAY[i].includes(t)));
+}
+function hl(text, ts){
+  const t = text.normalize("NFKC"), low = t.toLowerCase(), mk = new Array(t.length).fill(false);
+  ts.forEach(x => { let i = 0; while ((i = low.indexOf(x, i)) !== -1) { for (let k = i; k < i + x.length; k++) mk[k] = true; i += x.length; } });
+  let out = "", on = false;
+  for (let k = 0; k < t.length; k++) { if (mk[k] !== on) { out += on ? "</mark>" : "<mark>"; on = mk[k]; } out += esc(t[k]); }
+  return on ? out + "</mark>" : out;
+}
+function snip(text, ts){
+  const t = text.normalize("NFKC"), low = t.toLowerCase();
+  let i = -1; for (const x of ts) { i = low.indexOf(x); if (i >= 0) break; }
+  if (i < 0) return "";
+  const a = Math.max(0, i - 30), b = Math.min(t.length, i + 60);
+  return (a ? "…" : "") + hl(t.slice(a, b), ts) + (b < t.length ? "…" : "");
+}
+
+/* ---------- ホーム ---------- */
+function home(keep){
+  view = "home";
+  const p = store.pref;
+  const subjCount = {}; cards.forEach(c => subjCount[c.subj] = (subjCount[c.subj]||0) + 1);
+  const units = {}; cards.filter(c => !p.subj.length || p.subj.includes(c.subj)).forEach(c => units[c.unit] = units[c.unit] || [c.uname, 0, c.subj]);
+  cards.filter(c => !p.subj.length || p.subj.includes(c.subj)).forEach(c => units[c.unit][1]++);
+  if (p.unit && !units[p.unit]) { p.unit = ""; save(); }
+  const scope = inScope();
+  const done = scope.filter(c => store.h[c.id]);
+  const right = done.filter(c => store.h[c.id][2]).length;
+  const scopeName = p.unit ? `${p.unit} ${units[p.unit][0]}` : (p.subj.length ? p.subj.slice().sort().map(s => `${s} ${SUBJ[s]}`).join("・") : "全科目");
+  $app.innerHTML = `
+    <h1>証券化マスター 一問一答</h1>
+    <p class="lede">2021〜2025年度の過去問 ${cards.length.toLocaleString()} 肢を、1肢ずつ ○× で解く</p>
+    <p class="scope">えらんだ範囲：${esc(scopeName)}（${scope.length.toLocaleString()} 肢）</p>
+    <div class="stats" style="margin-top:6px">
+      <div class="stat"><b>${done.length.toLocaleString()}</b><span>解いた肢</span></div>
+      <div class="stat"><b>${done.length ? Math.round(right/done.length*100) : 0}<small style="font-size:.8rem">%</small></b><span>最後の回答の正答率</span></div>
+      <div class="stat"><b>${done.length - right}</b><span>いま落としている肢</span></div>
+    </div>
+    <div class="search"><input id="sq" type="search" placeholder="文言で探す（例：導管性　善管注意義務）" value="${esc(searchQ)}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" aria-label="文言で探す"><button class="sqx" id="sqx" aria-label="検索をクリア" ${searchQ ? "" : "hidden"}>×</button></div>
+    <div id="sres"></div>
+    <div id="filters">
+    <section><p class="label">科目（複数えらべる）</p>
+      <div class="chips">${Object.keys(SUBJ).map(s => `<button class="chip" data-subj="${s}" aria-pressed="${p.subj.includes(s)}">${s} ${SUBJ[s]}<small>${subjCount[s]||0}</small></button>`).join("")}</div>
+    </section>
+    <section><p class="label">単元でしぼる</p>
+      <select id="unit"><option value="">すべての単元</option>${Object.entries(units).sort((a,b)=>a[0].localeCompare(b[0])).map(([u,[n,k]]) => `<option value="${u}" ${p.unit===u?"selected":""}>${u}　${esc(n)}（${k}）</option>`).join("")}</select>
+    </section>
+    <section><p class="label">出し方</p>
+      <div class="modes">${MODES.map(([k,t,d,f]) => `<button class="mode" data-mode="${k}" aria-pressed="${p.mode===k}"><div><b>${t}</b><span>${d}</span></div><em>${f(scope).length}肢</em></button>`).join("")}</div>
+    </section>
+    <section><p class="label">1回の問題数</p>
+      <div class="chips">${[10,20,50,0].map(n => `<button class="chip" data-n="${n}" aria-pressed="${p.n===n}">${n ? n+"問" : "全部"}</button>`).join("")}</div>
+    </section>
+    <p class="note">正誤と理由は、単元別過去問集の解説原稿（協会の公式解説と講義資料にもとづく）から取っています。記録はこの端末のこのアプリの中だけに残ります。<span id="offline"></span><br><button class="linkbtn" id="reset">記録を消す</button></p>
+    </div>`;
+  const pool = MODES.find(m => m[0]===p.mode)[3](scope);
+  const setBar = (list, label) => {
+    const n = p.n ? Math.min(p.n, list.length) : list.length;
+    setBarHTML(`<button class="big" id="go" ${list.length?"":"disabled"}>${list.length ? `${label}（${n}問）` : "この条件の肢はありません"}</button>`);
+    document.getElementById("go").onclick = tap(() => { const q = shuffle(list.slice()); start(p.n ? q.slice(0, p.n) : q); });
+  };
+  const $sq = document.getElementById("sq"), $sqx = document.getElementById("sqx"), $sres = document.getElementById("sres"), $filters = document.getElementById("filters");
+  const renderSearch = () => {
+    $sqx.hidden = !searchQ;
+    if (!searchQ) { $sres.innerHTML = ""; $filters.hidden = false; setBar(pool, "はじめる"); return; }
+    const ts = terms(searchQ), hits = search(searchQ);
+    $filters.hidden = true;
+    $sres.innerHTML = `<div class="shead"><span><b>${hits.length}</b> 肢が見つかりました</span><span class="lede">タップで解説</span></div>
+      <div class="hits">${hits.slice(0, shown).map(c => {
+        const inQ = terms(searchQ).every(x => c.q.normalize("NFKC").toLowerCase().includes(x));
+        const w = inQ ? "" : (snip(stripTags(c.why), ts) || snip(c.lead, ts));
+        return `<div class="hit"><button class="hitbtn" data-id="${esc(c.id)}"><span class="s">${esc(srcText(c))}</span><span class="ox ${c.a ? "o" : "x"}">${c.a ? "○" : "×"}</span>${hl(c.q, ts)}${w ? `<span class="hw">${w}</span>` : ""}</button><div class="hexp" hidden></div></div>`;
+      }).join("")}</div>
+      ${hits.length > shown ? `<button class="more" id="more">さらに表示（残り ${hits.length - shown} 肢）</button>` : ""}
+      ${hits.length ? "" : `<p class="lede" style="margin-top:12px">見つかりませんでした。言葉を短くするか、別の言い方で探してください。</p>`}`;
+    $sres.querySelectorAll(".hitbtn").forEach(b => b.onclick = () => {
+      const box = b.nextElementSibling, c = byId[b.dataset.id];
+      if (box.hidden && !box.innerHTML) box.innerHTML = `<p class="lede">${esc(c.lead)}</p><p>${c.why}</p>`;
+      box.hidden = !box.hidden;
+    });
+    const more = document.getElementById("more");
+    if (more) more.onclick = () => { shown += 60; renderSearch(); };
+    setBar(hits, `この${hits.length}肢から出題`);
+  };
+  let tmr = null;
+  const onq = () => { clearTimeout(tmr); tmr = setTimeout(() => { searchQ = $sq.value.trim(); shown = 60; renderSearch(); }, 200); };
+  $sq.addEventListener("input", e => { if (!e.isComposing) onq(); });
+  $sq.addEventListener("compositionend", onq);
+  $sq.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); $sq.blur(); } });
+  $sqx.onclick = () => { $sq.value = ""; searchQ = ""; renderSearch(); };
+  $app.querySelectorAll("[data-subj]").forEach(b => b.onclick = () => { const s=b.dataset.subj; p.subj = p.subj.includes(s) ? p.subj.filter(x=>x!==s) : [...p.subj, s]; p.unit=""; save(); home(true); });
+  $app.querySelector("#unit").onchange = e => { p.unit = e.target.value; save(); home(true); };
+  $app.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { p.mode = b.dataset.mode; save(); home(true); });
+  $app.querySelectorAll("[data-n]").forEach(b => b.onclick = () => { p.n = +b.dataset.n; save(); home(true); });
+  const rs = $app.querySelector("#reset");
+  let armed = 0;
+  rs.onclick = () => {
+    const t = performance.now();
+    if (armed && t - armed > 700 && t - armed < 5000) { store.h = {}; store.star = {}; save(); home(); return; }
+    armed = t; rs.textContent = "もう一度押すと、解いた記録と★をすべて消します（5秒以内）";
+    setTimeout(() => { if (rs.isConnected) rs.textContent = "記録を消す"; armed = 0; }, 5000);
+  };
+  if (window.__offlineText) document.getElementById("offline").textContent = window.__offlineText;
+  if (window.__updateReady) { const b = document.createElement("button"); b.className = "banner"; b.textContent = "新しい版があります。タップすると入れ替えます"; b.onclick = () => location.reload(); $app.prepend(b); }
+  renderSearch();
+  const y = window.scrollY;
+  window.scrollTo(0, keep === true ? y : 0);
+}
+
+/* ---------- 出題 ---------- */
+let run = null;
+function start(list){ run = {list, i:0, log:[]}; ask(); }
+function ask(){
+  view = "quiz";
+  const c = run.list[run.i];
+  $app.innerHTML = `
+    <div class="top"><button class="back" id="quit">← やめる</button><span class="prog">${run.i+1} / ${run.list.length}</span></div>
+    <div class="track"><i style="width:${run.i/run.list.length*100}%"></i></div>
+    <p class="src">${esc(srcText(c))}</p>
+    <p class="lead">${esc(c.lead)}</p>
+    <p class="hint">問題文が「誤っているもの」を問う形でも、この肢そのものが正しいか誤りかを答えます</p>
+    ${c.ctx ? `<div class="ctx"><p class="label">前提になる肢</p>${c.ctx.map(([l,t]) => `<p><b>${esc(l)}．</b>${esc(t)}</p>`).join("")}</div>` : ""}
+    <div class="q" style="margin-top:6px"><span class="lab">${esc(c.lab)}</span>${esc(c.q)}</div>
+    <div id="after"></div>`;
+  setBarHTML(`<button class="ans o" data-a="1">○<small>正しい</small></button><button class="ans x" data-a="0">×<small>誤り</small></button>`);
+  $bar.querySelectorAll("[data-a]").forEach(b => b.onclick = tap(() => answer(c, b.dataset.a === "1")));
+  document.getElementById("quit").onclick = () => run.log.length ? finish() : home();
+  window.scrollTo(0,0);
+}
+function answer(c, said){
+  const ok = said === c.a;
+  const h = store.h[c.id] || [0,0,0,0];
+  h[ok?0:1]++; h[2] = ok?1:0; h[3] = Date.now(); store.h[c.id] = h; save();
+  run.log.push([c.id, ok]);
+  const f = DATA.full[qkey(c)];
+  document.getElementById("after").innerHTML = `
+    <div class="result ${ok?"ok":"ng"}">
+      <h2>${ok ? "正解" : "不正解"}<span>この肢は${c.a ? "○ 正しい" : "× 誤り"}</span></h2>
+      <p class="why">${c.why}</p>
+    </div>
+    <div class="tools">
+      <button class="tool" id="star" aria-pressed="${!!store.star[c.id]}">${store.star[c.id] ? "★ 見直しリストに入っています" : "☆ 見直しリストに入れる"}</button>
+      ${f ? `<button class="tool" id="showfull">問題の全文を見る</button>` : ""}
+    </div>
+    <div id="fullbox"></div>
+    <p class="hist">この肢の記録：正解 ${h[0]}回・不正解 ${h[1]}回</p>`;
+  const st = document.getElementById("star");
+  st.onclick = () => { if (store.star[c.id]) delete store.star[c.id]; else store.star[c.id] = 1; save();
+    st.setAttribute("aria-pressed", !!store.star[c.id]); st.textContent = store.star[c.id] ? "★ 見直しリストに入っています" : "☆ 見直しリストに入れる"; };
+  const sf = document.getElementById("showfull");
+  if (sf) sf.onclick = () => { sf.remove();
+    document.getElementById("fullbox").innerHTML = `<div class="full"><p>${esc(f.lead)}</p>${f.items.map(([l,t]) => `<p class="${l===c.lab?"cur":""}"><b>${esc(l)}．</b>${esc(t)}</p>`).join("")}</div>`; };
+  const last = run.i === run.list.length - 1;
+  setBarHTML(`<button class="big ${ok ? "ok" : "ng"}" id="next">${ok ? "○ 正解" : "× 不正解"}　—　${last ? "結果を見る" : "次へ"}</button>`);
+  document.getElementById("next").onclick = tap(() => { if (last) finish(); else { run.i++; ask(); } });
+  document.querySelector(".track i").style.width = `${(run.i+1)/run.list.length*100}%`;
+  const r = document.querySelector(".result").getBoundingClientRect(), lim = window.innerHeight - $bar.offsetHeight;
+  if (r.top > lim - 80) window.scrollBy(0, r.top - Math.round(window.innerHeight * 0.3));
+}
+
+/* ---------- 結果 ---------- */
+function finish(){
+  view = "result";
+  const n = run.log.length, r = run.log.filter(x => x[1]).length;
+  const wrong = run.log.filter(x => !x[1]).map(x => byId[x[0]]);
+  $app.innerHTML = `
+    <h1>おつかれさまでした</h1>
+    <div class="score">${r}<small>/ ${n} 正解（${n ? Math.round(r/n*100) : 0}%）</small></div>
+    ${wrong.length ? `<section><p class="label">まちがえた肢</p><div class="list">${wrong.map(c => `<div class="row"><div class="s">${esc(srcText(c))}　正解：${c.a?"○":"×"}</div>${esc(c.q)}</div>`).join("")}</div></section>` : `<section><p class="lede">全問正解です。</p></section>`}`;
+  setBarHTML(`${wrong.length ? `<button class="big" id="again">まちがえた肢をもう一度</button>` : ""}<button class="big" id="home" style="${wrong.length ? "background:var(--card);color:var(--accent);border:1px solid var(--accent)" : ""}">メニューへ</button>`);
+  if (wrong.length) document.getElementById("again").onclick = tap(() => start(shuffle(wrong.slice())));
+  document.getElementById("home").onclick = tap(() => home());
+  window.scrollTo(0,0);
+}
+/* 別のタブやアプリで記録が増えていたら、戻ってきたときに読み直す（古い記録で上書きしない） */
+const refresh = () => { load(); if (view === "home") home(true); };
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") refresh(); });
+window.addEventListener("pageshow", e => { if (e.persisted) refresh(); });
+window.__home = () => { if (view === "home") home(true); };
+home();
+}
+const PKEY = "sm-ichimon-pass", ITER = 250000;
+const normPw = s => s.normalize("NFKC").toLowerCase().replace(/\s+/g, "");
+async function decrypt(pw){
+  if (!window.crypto || !crypto.subtle) throw new Error("insecure");
+  const res = await fetch("data.enc");
+  if (!res.ok) throw new Error("net");
+  const buf = new Uint8Array(await res.arrayBuffer());
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveKey"]);
+  const key = await crypto.subtle.deriveKey({name:"PBKDF2", salt:buf.slice(0,16), iterations:ITER, hash:"SHA-256"}, base, {name:"AES-GCM", length:256}, false, ["decrypt"]);
+  const plain = await crypto.subtle.decrypt({name:"AES-GCM", iv:buf.slice(16,28)}, key, buf.slice(28));
+  return JSON.parse(new TextDecoder().decode(plain));
+}
+const wrongPw = e => e && e.name === "OperationError";
+function failScreen(e){
+  const app = document.getElementById("app"), bar = document.getElementById("bar");
+  app.innerHTML = `<h1>証券化マスター 一問一答</h1><p class="lede">${e && e.message === "insecure"
+    ? "このアドレスでは開けません。https:// で始まるアドレスから開いてください。"
+    : "問題データを読み込めませんでした。電波のある所で、もう一度開いてください。"}</p>`;
+  bar.innerHTML = `<button class="big" id="retry">もう一度読み込む</button>`;
+  document.getElementById("retry").onclick = () => location.reload();
+}
+async function boot(){
+  const app = document.getElementById("app"), bar = document.getElementById("bar");
+  let saved = null; try { saved = localStorage.getItem(PKEY); } catch(e){}
+  if (saved) {
+    let d = null;
+    try { d = await decrypt(saved); }
+    catch(e){ if (!wrongPw(e)) return failScreen(e); }
+    if (d) return main(d);
+  }
+  app.innerHTML = `<h1>証券化マスター 一問一答</h1>
+    <p class="lede">最初の1回だけ合言葉を入れてください。次からは自動で開きます。</p>
+    <p class="lede" style="margin-top:8px">ホーム画面のアイコンから開いている場合は、ここで入れてください。Safariで入れた合言葉と記録は、アイコンの側には引き継がれません。</p>
+    <section><p class="label">合言葉</p><input id="pw" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
+      style="width:100%;font:inherit;font-size:16px;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)">
+    <p class="lede" style="margin-top:6px">英字キーボード（ABC）で入力するか、Macでコピーしてここに貼り付けてください。</p>
+    <p id="err" class="lede" style="color:var(--ng);margin-top:8px"></p></section>`;
+  bar.innerHTML = `<button class="big" id="open">開く</button>`;
+  const go = async () => {
+    const pw = normPw(document.getElementById("pw").value), err = document.getElementById("err");
+    err.textContent = "確認しています…";
+    let d = null;
+    try { d = await decrypt(pw); }
+    catch(e){ err.textContent = wrongPw(e) ? "合言葉が違います。合言葉.txt の文字をそのまま入れてください。" : "問題データを読み込めませんでした。電波のある所で、もう一度試してください。"; return; }
+    try { localStorage.setItem(PKEY, pw); } catch(e){}
+    main(d);
+  };
+  document.getElementById("open").onclick = go;
+  document.getElementById("pw").onkeydown = e => { if (e.key === "Enter") go(); };
+}
+/* オフラインで使えるかどうかを、ホーム画面の注記に出す */
+function offlineStatus(){
+  if (!("caches" in window)) return;
+  caches.match("data.enc").then(r => {
+    window.__offlineText = r ? "　この端末にはオフライン用のデータが入っています。" : "　オフライン用のデータを準備中です。電波のある所で一度開いたままにしてください。";
+    const el = document.getElementById("offline"); if (el) el.textContent = window.__offlineText;
+  }).catch(() => {});
+}
+if ("serviceWorker" in navigator) {
+  const had = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register("sw.js").then(reg => {
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") reg.update().catch(() => {}); });
+  }).catch(() => {});
+  navigator.serviceWorker.ready.then(offlineStatus);
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    offlineStatus();
+    if (had) { window.__updateReady = true; if (window.__home) window.__home(); }
+  });
+}
+const standalone = (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone;
+if (standalone && navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+boot();
+</script>
+
+</html>
