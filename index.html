@@ -5,132 +5,169 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="一問一答">
-<meta name="theme-color" content="#f5f6f3" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#12161d" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#ffffff">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Antonio:wght@500;600;700&display=swap">
 <meta name="robots" content="noindex,nofollow">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <style>:root{padding-top:env(safe-area-inset-top,0px)}body{margin:0}[hidden]{display:none!important}</style>
 <title>証券化マスター 一問一答</title>
 <style>
-/* Layout: 片手で回す一画面アプリ。上に出典と設問、下に親指で押す ○ × の帯 */
+/* Layout: notahotel.com の作り（2026-10-23 実測）を移した一画面アプリ。白い地、黒いヒーロー、青い丸ボタンは1色だけ */
 :root{
-  --paper:#f5f6f3; --card:#ffffff; --ink:#1d2433; --sub:#5d6677; --line:#dfe2e6;
-  --accent:#27406b; --accent-soft:#e6ebf4;
-  --ok:#17795f; --ok-soft:#e1f2ec; --ng:#b8432f; --ng-soft:#f8e6e2; --star:#b07a12;
-  --body:"BIZ UDPGothic","Hiragino Sans","Hiragino Kaku Gothic ProN",system-ui,sans-serif;
-  --display:"Zen Kaku Gothic New","Hiragino Sans",system-ui,sans-serif;
+  --white:#FFFFFF; --ink:#0B0B0D; --black:#000000; --grey:#858A95; --grey2:#A3A8B1; --hair:#E6E6E8; --mist:#F4F4F5;
+  --blue:#0171E3; --blue-soft:#E8F1FD;
+  /* 合言葉画面（build_app.py）が使う名前 */
+  --card:var(--white); --line:var(--hair); --sub:var(--grey); --ng:#C2261B;
+  --jp:"Hiragino Sans","Hiragino Kaku Gothic ProN",system-ui,sans-serif;
+  --latin:"Helvetica Neue",Helvetica,Arial,sans-serif;
+  --num:"Antonio","HNC","Helvetica Neue",sans-serif;
+  color-scheme:light;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --paper:#12161d; --card:#1b2029; --ink:#e7eaf0; --sub:#9aa3b2; --line:#2c3340;
-  --accent:#8fb0e8; --accent-soft:#222c3d;
-  --ok:#4cc29b; --ok-soft:#173129; --ng:#ef8a74; --ng-soft:#3a201b; --star:#e0b04a; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --paper:#12161d; --card:#1b2029; --ink:#e7eaf0; --sub:#9aa3b2; --line:#2c3340;
-  --accent:#8fb0e8; --accent-soft:#222c3d;
-  --ok:#4cc29b; --ok-soft:#173129; --ng:#ef8a74; --ng-soft:#3a201b; --star:#e0b04a; color-scheme:dark}
-html,body{height:100%}
-body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.75;-webkit-text-size-adjust:100%}
+@font-face{font-family:"HNC";src:local("HelveticaNeue-CondensedBold");font-weight:600 700}
 *{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--white);color:var(--ink);font-family:var(--jp);font-size:16px;line-height:1.75;-webkit-text-size-adjust:100%;font-feature-settings:"palt";-webkit-font-smoothing:antialiased}
 button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
-button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.wrap{max-width:640px;margin:0 auto;padding-inline:16px;padding-block:16px 140px}
-h1{font-family:var(--display);font-weight:900;font-size:1.45rem;line-height:1.3;margin:4px 0 2px;text-wrap:balance}
-.lede{color:var(--sub);font-size:.85rem;margin:0}
-.label{font-size:.75rem;letter-spacing:.06em;color:var(--sub);margin:0 0 8px;font-weight:700}
-section{margin-top:22px}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.wrap{max-width:640px;margin:0 auto;padding-inline:20px;padding-block:16px 150px}
+.wrap.flush{padding-inline:0;padding-top:0}
+.pad{padding-inline:20px}
+h1{font-weight:700;font-size:1.5rem;line-height:1.35;margin:8px 0 4px;letter-spacing:.02em}
+.lede{color:var(--grey);font-size:.85rem;margin:0;line-height:1.7}
+.label{font-size:.8rem;letter-spacing:.04em;color:var(--ink);margin:0 0 10px;font-weight:600}
+section{margin-top:34px}
 
-/* ホーム */
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
-.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
-.stat b{display:block;font-family:var(--display);font-size:1.35rem;font-variant-numeric:tabular-nums;line-height:1.2}
-.stat span{font-size:.72rem;color:var(--sub)}
+/* ヘッダー */
+.hdr{display:flex;align-items:center;justify-content:space-between;height:60px}
+.hdr .mark{display:flex}
+.hdr .r{font-size:.75rem;color:var(--grey);letter-spacing:.04em}
+/* 黒いヒーロー */
+.hero{position:relative;background:radial-gradient(90% 70% at 85% 0%,#2a2c30 0%,#121315 55%,#08080a 100%);color:#fff;padding:22px 20px 26px;overflow:hidden}
+.stories{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;margin:0 -20px;padding:0 20px 2px}
+.stories::-webkit-scrollbar{display:none}
+.st{flex:0 0 60px;height:60px;border-radius:50%;padding:3px;border:1.5px solid rgba(255,255,255,.5);background:none;display:flex}
+.st span{flex:1;border-radius:50%;background:#26282c;display:flex;align-items:center;justify-content:center;font-family:var(--num);font-weight:500;font-size:19px;letter-spacing:.02em;color:#fff}
+.st[aria-pressed="true"]{border:3px solid var(--blue);padding:2px}
+.st[aria-pressed="true"] span{background:#3a3d42}
+.kick{margin:26px 0 0;text-align:center;font-size:.8rem;letter-spacing:.12em;color:rgba(255,255,255,.85)}
+.ttl{margin:2px 0 0;text-align:center;font-weight:700;font-size:3.6rem;line-height:1.15;letter-spacing:.04em}
+.scope{margin:6px 0 0;text-align:center;font-size:.75rem;line-height:1.6;color:rgba(255,255,255,.6);text-wrap:balance;word-break:keep-all;overflow-wrap:anywhere}
+.facts{display:grid;grid-template-columns:repeat(3,1fr);margin-top:22px;border-top:1px solid rgba(255,255,255,.14)}
+.facts div{padding:14px 4px 0;text-align:center}
+.facts div+div{border-left:1px solid rgba(255,255,255,.14)}
+.facts b{display:block;font-family:var(--num);font-weight:600;font-size:2rem;line-height:1;font-variant-numeric:tabular-nums}
+.facts b small{font-size:.55em;margin-left:2px}
+.facts span{display:block;margin-top:6px;font-size:.7rem;color:rgba(255,255,255,.6)}
+.sel{position:relative;display:flex;align-items:center;margin-top:22px;height:54px;border-radius:999px;background:rgba(255,255,255,.13);box-shadow:inset 0 0 0 1px rgba(255,255,255,.10)}
+.sel span{position:absolute;left:22px;font-size:.75rem;color:rgba(255,255,255,.6);pointer-events:none}
+.sel::after{content:"";position:absolute;right:22px;top:50%;width:8px;height:8px;margin-top:-6px;border-right:1.5px solid #fff;border-bottom:1.5px solid #fff;transform:rotate(45deg);pointer-events:none}
+.sel select{appearance:none;-webkit-appearance:none;width:100%;height:100%;border:0;background:none;color:#fff;font:inherit;font-size:16px;font-weight:600;padding:0 46px 0 64px;border-radius:999px;text-overflow:ellipsis}
+.sel select option{color:#000}
+
+/* 白いセクション */
+.sec{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 12px}
+.sec b{font-weight:600;font-size:1.05rem;letter-spacing:.04em}
+.sec span{font-size:.8rem;color:var(--grey)}
+.modes{border-top:1px solid var(--hair)}
+.mode{display:flex;width:100%;justify-content:space-between;align-items:center;gap:12px;text-align:left;background:none;border:0;border-bottom:1px solid var(--hair);padding:14px 2px}
+.mode b{display:block;font-size:.98rem;font-weight:600}
+.mode span{display:block;font-size:.75rem;color:var(--grey);line-height:1.5}
+.mode em{font-style:normal;font-family:var(--num);font-weight:500;font-size:1.5rem;line-height:1;white-space:nowrap}
+.mode em small{font-family:var(--jp);font-size:.5em;margin-left:2px}
+.mode[aria-pressed="true"] b,.mode[aria-pressed="true"] em{color:var(--blue)}
+.mode[aria-pressed="true"] b::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--blue);margin:0 8px 2px 0;vertical-align:middle}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 12px;font-size:.85rem;line-height:1.3}
-.chip small{color:var(--sub);margin-left:4px;font-variant-numeric:tabular-nums}
-.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--card)}
-.chip[aria-pressed="true"] small{color:inherit;opacity:.8}
-select{width:100%;font:inherit;font-size:1rem;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
-.modes{display:grid;gap:8px}
-.mode{display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
-.mode[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--accent-soft)}
-.mode b{font-size:.95rem}
-.mode span{font-size:.78rem;color:var(--sub);display:block;line-height:1.4}
-.mode em{font-style:normal;font-variant-numeric:tabular-nums;font-weight:700;color:var(--accent);white-space:nowrap}
-.note{font-size:.75rem;color:var(--sub);line-height:1.6;margin-top:24px}
-.linkbtn{background:none;border:0;padding:0;color:var(--sub);text-decoration:underline;font-size:.75rem}
+.chip{border:1px solid var(--hair);background:var(--white);border-radius:999px;padding:9px 18px;font-size:.88rem;line-height:1.3}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.rail{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-inline:20px;scrollbar-width:none;margin:0 -20px;padding:0 20px 4px}
+.rail::-webkit-scrollbar{display:none}
+.scard{flex:0 0 232px;scroll-snap-align:start;text-align:left;background:none;border:0;padding:0}
+.scard .img{position:relative;height:176px;border-radius:6px;overflow:hidden;background:radial-gradient(80% 80% at 50% 40%,#232428 0%,#0d0d0f 100%);display:flex;align-items:center;justify-content:center}
+.scard .img svg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+.cn{position:relative;display:flex;align-items:baseline;gap:2px;color:#fff}
+.cn b{font-family:var(--num);font-weight:600;font-size:2.9rem;line-height:1}
+.cn span{font-weight:600;font-size:.75rem}
+.tagw{position:absolute;left:10px;bottom:10px;background:#fff;color:#000;border-radius:2px;padding:4px 7px 3px;font-size:.68rem;line-height:1.2}
+.scard[aria-pressed="true"] .img{box-shadow:inset 0 0 0 3px var(--blue)}
+.loc{margin-top:10px;font-family:var(--num);font-weight:500;font-size:1rem;color:var(--grey);letter-spacing:.02em}
+.ja{font-weight:300;font-size:.92rem;line-height:1.5}
+.fact{margin-top:4px;display:flex;gap:10px;flex-wrap:wrap;font-size:.82rem;letter-spacing:.02em}
+.fact b{font-weight:500} .fact span{color:var(--grey)}
+.note{font-size:.72rem;color:var(--grey);line-height:1.7;margin-top:34px}
+.linkbtn{background:none;border:0;padding:0;color:var(--grey);text-decoration:underline;font-size:.72rem}
+.banner{display:block;width:calc(100% - 40px);margin:12px 20px 0;text-align:left;border:0;background:var(--blue-soft);color:var(--ink);border-radius:6px;padding:12px 14px;font-size:.85rem}
+.banner::before{content:"NEW";font-family:var(--latin);font-size:.7rem;background:#fff;border-radius:2px;padding:2px 6px;margin-right:8px}
 
-/* 下の帯 */
-.bar{position:fixed;left:0;right:0;bottom:0;background:var(--paper);border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}
-.bar .in{max-width:640px;margin:0 auto;display:flex;gap:10px}
-.big{flex:1;border:0;border-radius:14px;padding:14px 0;font-family:var(--display);font-weight:900;font-size:1.15rem;background:var(--accent);color:var(--card)}
-.big:disabled{opacity:.4}
-.ans{flex:1;border-radius:14px;padding:10px 0;font-family:var(--display);font-weight:900;font-size:2.1rem;line-height:1.1;border:2px solid}
-.ans small{display:block;font-family:var(--body);font-size:.72rem;font-weight:700;letter-spacing:.04em}
-.ans.o{color:var(--ok);border-color:var(--ok);background:var(--ok-soft)}
-.ans.x{color:var(--ng);border-color:var(--ng);background:var(--ng-soft)}
+/* 下の帯（浮かぶ丸ボタン） */
+.bar{position:fixed;left:0;right:0;bottom:0;padding:18px 20px calc(16px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.92) 38%,#fff 100%);pointer-events:none}
+.bar .in{max-width:640px;margin:0 auto;display:flex;gap:10px;pointer-events:auto}
+.big{flex:1;border:0;border-radius:999px;height:58px;padding:0 14px;white-space:nowrap;font-weight:600;font-size:1.02rem;letter-spacing:.04em;background:var(--blue);color:#fff;box-shadow:0 8px 24px -10px rgba(1,113,227,.55)}
+.big:disabled{background:var(--grey2);box-shadow:none}
+.big.ok{background:var(--blue)} .big.ng{background:var(--ink);box-shadow:0 8px 24px -10px rgba(0,0,0,.5)}
+.big.ghost{background:#fff;color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+#again{flex:1.6}
+.ans{flex:1;height:72px;border-radius:999px;border:1.5px solid var(--ink);background:#fff;color:var(--ink);display:flex;align-items:center;justify-content:center;gap:10px;font-weight:600;font-size:.95rem;letter-spacing:.06em}
+.ans svg{display:block}
 
 /* 出題 */
-.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.top .back{background:none;border:0;color:var(--sub);font-size:.85rem;padding:4px 0}
-.prog{font-variant-numeric:tabular-nums;font-size:.85rem;color:var(--sub)}
-.track{height:4px;background:var(--line);border-radius:4px;margin-top:8px;overflow:hidden}
-.track i{display:block;height:100%;background:var(--accent);width:0;transition:width .25s}
-.src{font-size:.75rem;color:var(--sub);margin-top:16px;line-height:1.5}
-.src b{color:var(--accent)}
-.lead{font-size:.85rem;color:var(--sub);margin:8px 0 0;line-height:1.6}
-.q{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:10px;font-size:1.05rem;line-height:1.85}
-.q .lab{font-family:var(--display);font-weight:900;color:var(--accent);margin-right:6px}
-.result{margin-top:14px;border-radius:12px;padding:14px 16px;border:1px solid}
-.result.ok{background:var(--ok-soft);border-color:var(--ok)}
-.result.ng{background:var(--ng-soft);border-color:var(--ng)}
-.result h2{margin:0;font-family:var(--display);font-size:1.1rem;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
-.result.ok h2{color:var(--ok)} .result.ng h2{color:var(--ng)}
-.result h2 span{font-family:var(--body);font-size:.85rem;color:var(--ink);font-weight:700}
-.why{margin:8px 0 0;font-size:.95rem;line-height:1.8}
-.why b{background:linear-gradient(transparent 60%,var(--accent-soft) 60%)}
-.tools{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
-.tool{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 12px;font-size:.8rem}
-.tool[aria-pressed="true"]{color:var(--star);border-color:var(--star)}
-.full{margin-top:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:.85rem;line-height:1.7}
-.full p{margin:0 0 6px}
-.full .cur{background:var(--accent-soft);border-radius:6px;padding:2px 4px;margin-inline:-4px}
-.hist{font-size:.75rem;color:var(--sub);margin-top:10px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;height:52px}
+.top .back{background:none;border:0;color:var(--grey);font-size:.85rem;padding:4px 0}
+.prog{font-family:var(--num);font-weight:500;font-size:1.05rem;color:var(--grey);font-variant-numeric:tabular-nums}
+.prog b{color:var(--ink);font-weight:600;font-size:1.35rem}
+.track{height:2px;background:var(--hair);overflow:hidden}
+.track i{display:block;height:100%;background:var(--ink);width:0;transition:width .25s}
+.src{font-size:.75rem;color:var(--grey);margin:18px 0 0;line-height:1.55}
+.lead{font-size:.88rem;color:var(--ink);margin:10px 0 0;line-height:1.75;font-weight:300}
+.hint{font-size:.72rem;color:var(--grey);margin:12px 0 0}
+.ctx{margin-top:14px;border-left:2px solid var(--hair);padding:2px 0 2px 14px;font-size:.85rem;line-height:1.75;color:var(--grey)}
+.ctx p{margin:0 0 6px}
+.ctx .label{color:var(--grey);margin-bottom:6px}
+.q{border-top:1px solid var(--ink);padding:18px 0 0;margin-top:14px;font-size:1.1rem;line-height:1.95}
+.q .lab{font-family:var(--num);font-weight:600;color:var(--blue);margin-right:8px}
+.result{margin-top:26px;border-top:1px solid var(--hair);padding-top:18px}
+.result h2{margin:0;font-size:1.6rem;font-weight:700;line-height:1.2;display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+.result.ok h2{color:var(--blue)} .result.ng h2{color:var(--ink)}
+.result h2 span{font-size:.85rem;color:var(--grey);font-weight:500}
+.why{margin:12px 0 0;font-size:.98rem;line-height:1.9}
+.why b{font-weight:600;background:linear-gradient(transparent 62%,var(--blue-soft) 62%)}
+.tools{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap}
+.tool{border:1px solid var(--hair);background:#fff;border-radius:999px;padding:8px 16px;font-size:.8rem}
+.tool[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:#fff}
+.full{margin-top:14px;border-top:1px solid var(--hair);padding-top:12px;font-size:.85rem;line-height:1.75}
+.full p{margin:0 0 8px}
+.full .cur{background:var(--blue-soft);padding:2px 4px;margin-inline:-4px}
+.hist{font-size:.72rem;color:var(--grey);margin-top:12px}
 
 /* 結果 */
-.score{font-family:var(--display);font-weight:900;font-size:3rem;line-height:1;font-variant-numeric:tabular-nums;margin-top:20px}
-.score small{font-size:1rem;color:var(--sub);margin-left:6px}
-.list{display:grid;gap:8px;margin-top:12px}
-.row{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--ng);border-radius:8px;padding:10px 12px;font-size:.85rem;line-height:1.6}
-.row.ok{border-left-color:var(--ok)}
-.row .s{font-size:.72rem;color:var(--sub)}
+.score{display:flex;align-items:baseline;gap:8px;margin-top:22px;font-family:var(--num);font-weight:600;font-size:5.5rem;line-height:.9}
+.score small{font-size:.32em;color:var(--grey);font-weight:500}
+.score em{font-family:var(--jp);font-style:normal;font-size:.18em;color:var(--grey);font-weight:400;margin-left:6px}
+.list{border-top:1px solid var(--hair);margin-top:12px}
+.row{border-bottom:1px solid var(--hair);padding:12px 0;font-size:.88rem;line-height:1.7}
+.row .s{font-size:.72rem;color:var(--grey)}
+
 /* 文言検索 */
-.search{position:relative;margin-top:18px}
-.search input{width:100%;font:inherit;font-size:16px;padding:12px 44px 12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);-webkit-appearance:none;appearance:none}
-.search input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.search{position:relative;margin-top:22px}
+.search input{width:100%;font:inherit;font-size:16px;padding:14px 46px 14px 20px;border-radius:999px;border:0;background:var(--mist);color:var(--ink);-webkit-appearance:none;appearance:none}
+.search input::placeholder{color:var(--grey)}
 .search input::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none;display:none}
-.sqx{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--sub);font-size:1.3rem;width:36px;height:36px;line-height:1}
-.shead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:14px}
-.shead b{font-variant-numeric:tabular-nums}
-.hits{display:grid;gap:8px;margin-top:8px}
-.hit{background:var(--card);border:1px solid var(--line);border-radius:10px}
-.hitbtn{display:block;width:100%;text-align:left;background:none;border:0;padding:10px 12px;font-size:.88rem;line-height:1.65}
-.hitbtn .s{font-size:.72rem;color:var(--sub);display:block}
-.hitbtn .hw{display:block;font-size:.8rem;color:var(--sub);margin-top:4px}
-.ox{display:inline-block;min-width:1.6em;text-align:center;font-family:var(--display);font-weight:900;border-radius:6px;margin-right:6px;padding:0 4px}
-.ox.o{color:var(--ok);background:var(--ok-soft)} .ox.x{color:var(--ng);background:var(--ng-soft)}
-mark{background:var(--accent-soft);color:var(--ink);border-bottom:2px solid var(--accent);padding:0 1px}
-.hexp{border-top:1px solid var(--line);padding:10px 12px;font-size:.85rem;line-height:1.75}
+.sqx{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--grey);font-size:1.3rem;width:36px;height:36px;line-height:1}
+.shead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:18px;font-size:.85rem}
+.shead b{font-family:var(--num);font-weight:600;font-size:1.4rem}
+.hits{border-top:1px solid var(--hair);margin-top:10px}
+.hit{border-bottom:1px solid var(--hair)}
+.hitbtn{display:block;width:100%;text-align:left;background:none;border:0;padding:12px 0;font-size:.9rem;line-height:1.7}
+.hitbtn .s{font-size:.72rem;color:var(--grey);display:block}
+.hitbtn .hw{display:block;font-size:.8rem;color:var(--grey);margin-top:4px}
+.ox{display:inline-block;font-weight:700;margin-right:6px}
+.ox.o{color:var(--blue)} .ox.x{color:var(--ink)}
+mark{background:var(--blue-soft);color:var(--ink);padding:0 1px}
+.hexp{padding:0 0 14px;font-size:.85rem;line-height:1.8}
 .hexp p{margin:0 0 6px}
-.hexp b{background:linear-gradient(transparent 60%,var(--accent-soft) 60%)}
-.more{width:100%;margin-top:10px;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:10px;font-size:.85rem;color:var(--accent)}
-.hint{font-size:.75rem;color:var(--sub);margin:12px 0 0}
-.ctx{margin-top:10px;border-left:3px solid var(--line);padding:2px 0 2px 12px;font-size:.85rem;line-height:1.7;color:var(--sub)}
-.ctx p{margin:0 0 6px}
-.ctx .label{margin-bottom:4px}
-.big.ok{background:var(--ok)} .big.ng{background:var(--ng)}
-.scope{font-size:.75rem;color:var(--sub);margin:14px 0 0}
-.banner{display:block;width:100%;margin-top:12px;text-align:left;border:1px solid var(--accent);background:var(--accent-soft);color:var(--ink);border-radius:10px;padding:10px 12px;font-size:.85rem}
+.hexp b{font-weight:600}
+.more{width:100%;margin-top:14px;border:1px solid var(--hair);background:#fff;border-radius:999px;padding:12px;font-size:.85rem;color:var(--blue)}
 @media (prefers-reduced-motion:reduce){.track i{transition:none}}
 </style>
 
@@ -178,6 +215,30 @@ const MODES = [
 ];
 if (!MODES.some(m => m[0] === store.pref.mode)) store.pref.mode = "rand";
 
+/* ---------- 目盛りの輪（科目のカード） ---------- */
+const SUNITS = {}; cards.forEach(c => { (SUNITS[c.subj] = SUNITS[c.subj] || new Set()).add(c.unit); });
+Object.keys(SUNITS).forEach(s => SUNITS[s] = [...SUNITS[s]].sort());
+const UCARDS = {}; cards.forEach(c => (UCARDS[c.unit] = UCARDS[c.unit] || []).push(c.id));
+function ring(n, filled, active, size, ro, ri){
+  const c = size / 2, gap = n > 1 ? 2.4 : 0.001; let out = "";
+  for (let i = 0; i < n; i++){
+    const a0 = (-90 + i * 360 / n + gap / 2) * Math.PI / 180, a1 = (-90 + (i + 1) * 360 / n - gap / 2) * Math.PI / 180;
+    const P = (r, a) => `${(c + r * Math.cos(a)).toFixed(2)},${(c + r * Math.sin(a)).toFixed(2)}`;
+    const lg = (a1 - a0) > Math.PI ? 1 : 0;
+    const d = n === 1
+      ? `M${c},${c-ro} A${ro},${ro} 0 1 1 ${c-0.01},${c-ro} L${c-0.01},${c-ri} A${ri},${ri} 0 1 0 ${c},${c-ri} Z`
+      : `M${P(ro,a0)} A${ro},${ro} 0 ${lg} 1 ${P(ro,a1)} L${P(ri,a1)} A${ri},${ri} 0 ${lg} 0 ${P(ri,a0)} Z`;
+    const paint = i === active ? 'fill="#0171E3"' : filled[i] ? 'fill="#fff"' : 'fill="none" stroke="#fff" stroke-opacity=".8" stroke-width="1.3"';
+    out += `<path d="${d}" ${paint}/>`;
+  }
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true">${out}</svg>`;
+}
+const OXSVG = {
+  o: s => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>`,
+  x: s => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" aria-hidden="true"><g stroke="currentColor" stroke-width="2"><line x1="3.5" y1="3.5" x2="20.5" y2="20.5"/><line x1="20.5" y1="3.5" x2="3.5" y2="20.5"/></g></svg>`,
+};
+const MARK = `<svg width="46" height="22" viewBox="0 0 46 22" aria-label="○×"><circle cx="11" cy="11" r="9" fill="none" stroke="#000" stroke-width="3"/><g stroke="#000" stroke-width="4"><line x1="28" y1="3" x2="44" y2="19"/><line x1="44" y1="3" x2="28" y2="19"/></g></svg>`;
+
 /* ---------- 文言検索 ---------- */
 let searchQ = "", shown = 60, HAY = null;
 const stripTags = s => s.replace(/<[^>]+>/g, "");
@@ -214,31 +275,46 @@ function home(keep){
   const done = scope.filter(c => store.h[c.id]);
   const right = done.filter(c => store.h[c.id][2]).length;
   const scopeName = p.unit ? `${p.unit} ${units[p.unit][0]}` : (p.subj.length ? p.subj.slice().sort().map(s => `${s} ${SUBJ[s]}`).join("・") : "全科目");
+  const subjCards = Object.keys(SUBJ).map(sj => {
+    const us = SUNITS[sj] || [], filled = us.map(u => UCARDS[u].every(id => store.h[id]));
+    const n = subjCount[sj] || 0, solved = cards.filter(c => c.subj === sj && store.h[c.id]).length;
+    const on = p.subj.length === 1 && p.subj[0] === sj;
+    return `<button class="scard" data-card="${sj}" aria-pressed="${on}">
+      <div class="img">${ring(us.length, filled, us.indexOf(p.unit), 150, 72, 60)}<div class="cn"><b>${n}</b><span>肢</span></div>${on ? '<span class="tagw">えらんだ科目</span>' : ""}</div>
+      <div class="loc">${sj}</div><div class="ja">${SUBJ[sj]}</div>
+      <div class="fact"><b>${n}肢</b><span>${us.length}単元</span><span>解いた ${solved}</span></div></button>`;
+  }).join("");
+  $app.className = "wrap flush";
   $app.innerHTML = `
-    <h1>証券化マスター 一問一答</h1>
-    <p class="lede">2021〜2025年度の過去問 ${cards.length.toLocaleString()} 肢を、1肢ずつ ○× で解く</p>
-    <p class="scope">えらんだ範囲：${esc(scopeName)}（${scope.length.toLocaleString()} 肢）</p>
-    <div class="stats" style="margin-top:6px">
-      <div class="stat"><b>${done.length.toLocaleString()}</b><span>解いた肢</span></div>
-      <div class="stat"><b>${done.length ? Math.round(right/done.length*100) : 0}<small style="font-size:.8rem">%</small></b><span>最後の回答の正答率</span></div>
-      <div class="stat"><b>${done.length - right}</b><span>いま落としている肢</span></div>
-    </div>
-    <div class="search"><input id="sq" type="search" placeholder="文言で探す（例：導管性　善管注意義務）" value="${esc(searchQ)}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" aria-label="文言で探す"><button class="sqx" id="sqx" aria-label="検索をクリア" ${searchQ ? "" : "hidden"}>×</button></div>
+    <header class="hdr pad"><span class="mark">${MARK}</span><span class="r">過去問 2021–2025</span></header>
+    <section class="hero" style="margin-top:0">
+      <div class="stories">${Object.keys(SUBJ).map(sj => `<button class="st" data-subj="${sj}" aria-pressed="${p.subj.includes(sj)}" aria-label="${sj} ${SUBJ[sj]}"><span>${sj}</span></button>`).join("")}</div>
+      <p class="kick">証券化マスター</p>
+      <h1 class="ttl">一問一答</h1>
+      <p class="scope">えらんだ範囲：${esc(scopeName)}（${scope.length.toLocaleString()}肢）</p>
+      <div class="facts">
+        <div><b>${done.length.toLocaleString()}</b><span>解いた肢</span></div>
+        <div><b>${done.length ? Math.round(right/done.length*100) : 0}<small>%</small></b><span>最後の回答の正答率</span></div>
+        <div><b>${done.length - right}</b><span>いま落としている肢</span></div>
+      </div>
+      <label class="sel"><span>単元</span><select id="unit" aria-label="単元でしぼる"><option value="">すべての単元</option>${Object.entries(units).sort((a,b)=>a[0].localeCompare(b[0])).map(([u,[n,k]]) => `<option value="${u}" ${p.unit===u?"selected":""}>${u}　${esc(n)}（${k}）</option>`).join("")}</select></label>
+    </section>
+    <div class="pad">
+    <div class="search"><input id="sq" type="search" placeholder="文言で探す（例：導管性）" value="${esc(searchQ)}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" aria-label="文言で探す"><button class="sqx" id="sqx" aria-label="検索をクリア" ${searchQ ? "" : "hidden"}>×</button></div>
     <div id="sres"></div>
     <div id="filters">
-    <section><p class="label">科目（複数えらべる）</p>
-      <div class="chips">${Object.keys(SUBJ).map(s => `<button class="chip" data-subj="${s}" aria-pressed="${p.subj.includes(s)}">${s} ${SUBJ[s]}<small>${subjCount[s]||0}</small></button>`).join("")}</div>
+    <section><div class="sec"><b>出し方</b></div>
+      <div class="modes">${MODES.map(([k,t,d,f]) => `<button class="mode" data-mode="${k}" aria-pressed="${p.mode===k}"><div><b>${t}</b><span>${d}</span></div><em>${f(scope).length}<small>肢</small></em></button>`).join("")}</div>
     </section>
-    <section><p class="label">単元でしぼる</p>
-      <select id="unit"><option value="">すべての単元</option>${Object.entries(units).sort((a,b)=>a[0].localeCompare(b[0])).map(([u,[n,k]]) => `<option value="${u}" ${p.unit===u?"selected":""}>${u}　${esc(n)}（${k}）</option>`).join("")}</select>
-    </section>
-    <section><p class="label">出し方</p>
-      <div class="modes">${MODES.map(([k,t,d,f]) => `<button class="mode" data-mode="${k}" aria-pressed="${p.mode===k}"><div><b>${t}</b><span>${d}</span></div><em>${f(scope).length}肢</em></button>`).join("")}</div>
-    </section>
-    <section><p class="label">1回の問題数</p>
+    <section><div class="sec"><b>1回の問題数</b></div>
       <div class="chips">${[10,20,50,0].map(n => `<button class="chip" data-n="${n}" aria-pressed="${p.n===n}">${n ? n+"問" : "全部"}</button>`).join("")}</div>
     </section>
+    <section><div class="sec"><b>科目</b><span>タップで科目をしぼる</span></div>
+      <div class="rail">${subjCards}</div>
+      <p class="lede" style="margin-top:10px;font-size:.72rem">輪の白い目盛りは全部の肢を一度は解いた単元、青は今えらんでいる単元です。</p>
+    </section>
     <p class="note">正誤と理由は、単元別過去問集の解説原稿（協会の公式解説と講義資料にもとづく）から取っています。記録はこの端末のこのアプリの中だけに残ります。<span id="offline"></span><br><button class="linkbtn" id="reset">記録を消す</button></p>
+    </div>
     </div>`;
   const pool = MODES.find(m => m[0]===p.mode)[3](scope);
   const setBar = (list, label) => {
@@ -277,6 +353,7 @@ function home(keep){
   $sqx.onclick = () => { $sq.value = ""; searchQ = ""; renderSearch(); };
   $app.querySelectorAll("[data-subj]").forEach(b => b.onclick = () => { const s=b.dataset.subj; p.subj = p.subj.includes(s) ? p.subj.filter(x=>x!==s) : [...p.subj, s]; p.unit=""; save(); home(true); });
   $app.querySelector("#unit").onchange = e => { p.unit = e.target.value; save(); home(true); };
+  $app.querySelectorAll("[data-card]").forEach(b => b.onclick = () => { const sj = b.dataset.card; const on = p.subj.length === 1 && p.subj[0] === sj; p.subj = on ? [] : [sj]; p.unit = ""; save(); home(true); });
   $app.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { p.mode = b.dataset.mode; save(); home(true); });
   $app.querySelectorAll("[data-n]").forEach(b => b.onclick = () => { p.n = +b.dataset.n; save(); home(true); });
   const rs = $app.querySelector("#reset");
@@ -288,7 +365,7 @@ function home(keep){
     setTimeout(() => { if (rs.isConnected) rs.textContent = "記録を消す"; armed = 0; }, 5000);
   };
   if (window.__offlineText) document.getElementById("offline").textContent = window.__offlineText;
-  if (window.__updateReady) { const b = document.createElement("button"); b.className = "banner"; b.textContent = "新しい版があります。タップすると入れ替えます"; b.onclick = () => location.reload(); $app.prepend(b); }
+  if (window.__updateReady) { const b = document.createElement("button"); b.className = "banner"; b.textContent = "新しい版があります。タップすると入れ替えます"; b.onclick = () => location.reload(); $app.querySelector(".hdr").after(b); }
   renderSearch();
   const y = window.scrollY;
   window.scrollTo(0, keep === true ? y : 0);
@@ -300,8 +377,9 @@ function start(list){ run = {list, i:0, log:[]}; ask(); }
 function ask(){
   view = "quiz";
   const c = run.list[run.i];
+  $app.className = "wrap";
   $app.innerHTML = `
-    <div class="top"><button class="back" id="quit">← やめる</button><span class="prog">${run.i+1} / ${run.list.length}</span></div>
+    <div class="top"><button class="back" id="quit">← やめる</button><span class="prog"><b>${run.i+1}</b> / ${run.list.length}</span></div>
     <div class="track"><i style="width:${run.i/run.list.length*100}%"></i></div>
     <p class="src">${esc(srcText(c))}</p>
     <p class="lead">${esc(c.lead)}</p>
@@ -309,7 +387,7 @@ function ask(){
     ${c.ctx ? `<div class="ctx"><p class="label">前提になる肢</p>${c.ctx.map(([l,t]) => `<p><b>${esc(l)}．</b>${esc(t)}</p>`).join("")}</div>` : ""}
     <div class="q" style="margin-top:6px"><span class="lab">${esc(c.lab)}</span>${esc(c.q)}</div>
     <div id="after"></div>`;
-  setBarHTML(`<button class="ans o" data-a="1">○<small>正しい</small></button><button class="ans x" data-a="0">×<small>誤り</small></button>`);
+  setBarHTML(`<button class="ans o" data-a="1">${OXSVG.o(24)}正しい</button><button class="ans x" data-a="0">${OXSVG.x(22)}誤り</button>`);
   $bar.querySelectorAll("[data-a]").forEach(b => b.onclick = tap(() => answer(c, b.dataset.a === "1")));
   document.getElementById("quit").onclick = () => run.log.length ? finish() : home();
   window.scrollTo(0,0);
@@ -348,13 +426,14 @@ function answer(c, said){
 /* ---------- 結果 ---------- */
 function finish(){
   view = "result";
+  $app.className = "wrap";
   const n = run.log.length, r = run.log.filter(x => x[1]).length;
   const wrong = run.log.filter(x => !x[1]).map(x => byId[x[0]]);
   $app.innerHTML = `
     <h1>おつかれさまでした</h1>
-    <div class="score">${r}<small>/ ${n} 正解（${n ? Math.round(r/n*100) : 0}%）</small></div>
+    <div class="score">${r}<small>/ ${n}</small><em>正解（${n ? Math.round(r/n*100) : 0}%）</em></div>
     ${wrong.length ? `<section><p class="label">まちがえた肢</p><div class="list">${wrong.map(c => `<div class="row"><div class="s">${esc(srcText(c))}　正解：${c.a?"○":"×"}</div>${esc(c.q)}</div>`).join("")}</div></section>` : `<section><p class="lede">全問正解です。</p></section>`}`;
-  setBarHTML(`${wrong.length ? `<button class="big" id="again">まちがえた肢をもう一度</button>` : ""}<button class="big" id="home" style="${wrong.length ? "background:var(--card);color:var(--accent);border:1px solid var(--accent)" : ""}">メニューへ</button>`);
+  setBarHTML(`${wrong.length ? `<button class="big" id="again">まちがえた肢をもう一度</button>` : ""}<button class="big${wrong.length ? " ghost" : ""}" id="home">メニューへ</button>`);
   if (wrong.length) document.getElementById("again").onclick = tap(() => start(shuffle(wrong.slice())));
   document.getElementById("home").onclick = tap(() => home());
   window.scrollTo(0,0);
