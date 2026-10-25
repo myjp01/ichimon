@@ -79,6 +79,7 @@ section{margin-top:34px}
 .mode[aria-pressed="true"] b,.mode[aria-pressed="true"] em{color:var(--blue)}
 .mode[aria-pressed="true"] b::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--blue);margin:0 8px 2px 0;vertical-align:middle}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
+.vsel{width:100%;font:inherit;font-size:16px;padding:12px 16px;border-radius:999px;border:1px solid var(--hair);background:#fff;color:var(--ink)}
 .chip{border:1px solid var(--hair);background:var(--white);border-radius:999px;padding:9px 18px;font-size:.88rem;line-height:1.3}
 .chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
 .rail{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-inline:20px;scrollbar-width:none;margin:0 -20px;padding:0 20px 4px}
@@ -181,11 +182,11 @@ const KEY = "sm-ichimon-v1";
 const cards = DATA.cards, byId = {};
 cards.forEach(c => byId[c.id] = c);
 
-let store = {h:{}, star:{}, pref:{subj:[], unit:"", mode:"rand", n:20, voice:"off"}};
+let store = {h:{}, star:{}, pref:{subj:[], unit:"", mode:"rand", n:20, voice:"off", vname:"", rq:1, rw:1}};
 function load(){
   try {
     const s = JSON.parse(localStorage.getItem(KEY) || "null");
-    if (s) store = {h: s.h || {}, star: s.star || {}, pref: Object.assign({subj:[], unit:"", mode:"rand", n:20, voice:"off"}, s.pref)};
+    if (s) store = {h: s.h || {}, star: s.star || {}, pref: Object.assign({subj:[], unit:"", mode:"rand", n:20, voice:"off", vname:"", rq:1, rw:1}, s.pref)};
   } catch(e){}
   if (!Array.isArray(store.pref.subj)) store.pref.subj = [];
 }
@@ -225,12 +226,15 @@ const forSpeech = t => READ.reduce((s, [a, b]) => s.replace(a, b), String(t)).tr
 const sentences = t => forSpeech(t).split(/(?<=[。！？])/).map(x => x.trim()).filter(Boolean);
 /* 柱書の決まり文句（次の記述のうち…どれか）を外し、事例の説明が残るときだけ読む */
 const leadForSpeech = c => { const r = c.lead.replace(/[（(]問題\d+は[^）)]*[）)]/g, "").replace(/[、。]?\s*(?:次の|以下の|下記の)[^。]*?(?:どれか|いくつあるか)[。．]?\s*$/, ""); return r.length >= 40 ? r : ""; };
-const RATE = {q: 1.0, why: 1.22};  /* 解説だけやや速め */
+const RATE = { get q(){ return +store.pref.rq || 1; }, get why(){ return +store.pref.rw || 1; } };  /* 速さはホームの「音声」で選ぶ */
+const SPEEDS = [[0.8,"ゆっくり"],[0.9,"やや遅め"],[1,"ふつう"],[1.1,"やや速め"],[1.2,"速め"]];
 const TTS = (() => {
   const ok = "speechSynthesis" in window; let voice = null, gen = 0;
-  const pick = () => { const vs = speechSynthesis.getVoices().filter(v => /^ja/i.test(v.lang));
-    voice = vs.find(v => /Kyoko|O-?ren|Otoya/i.test(v.name) && /Enhanced|Premium|拡張|高音質/i.test(v.name)) || vs.find(v => /Kyoko|O-?ren|Otoya/i.test(v.name)) || vs[0] || null; };
-  if (ok) { pick(); speechSynthesis.onvoiceschanged = pick; }
+  /* 日本語の声だけ。おもちゃの声（Eddy・Grandma など）は外し、プレミアム＞拡張＞標準の順に並べる */
+  const grade = v => /premium|プレミアム/i.test(v.voiceURI + v.name) ? 3 : /enhanced|拡張|高音質/i.test(v.voiceURI + v.name) ? 2 : 1;
+  const list = () => ok ? speechSynthesis.getVoices().filter(v => /^ja/i.test(v.lang) && !/eloquence|novelty/i.test(v.voiceURI) && !/^(Eddy|Flo|Grandma|Grandpa|Reed|Rocko|Sandy|Shelley)\b/.test(v.name)).sort((a, b) => grade(b) - grade(a)) : [];
+  const pick = () => { const vs = list(); voice = vs.find(v => v.voiceURI === store.pref.vname) || vs[0] || null; };
+  if (ok) { pick(); speechSynthesis.onvoiceschanged = () => { pick(); if (view === "home" && window.__home) window.__home(); }; }
   const one = (t, r, my) => new Promise(res => {
     if (my !== gen) return res(false);
     const u = new SpeechSynthesisUtterance(t); u.lang = "ja-JP"; if (voice) u.voice = voice; u.rate = r;
@@ -243,12 +247,14 @@ const TTS = (() => {
     return my === gen;
   }
   function stop(){ gen++; if (ok) speechSynthesis.cancel(); }
-  return {ok, say, stop, live: () => gen};
+  const label = v => `${v.name.replace(/\s*[（(].*$/, "")}${grade(v) === 3 ? "（プレミアム）" : grade(v) === 2 ? "（拡張）" : ""}`;
+  return {ok, say, stop, live: () => gen, list, pick, label, current: () => voice};
 })();
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 let wake = null;
 const holdScreen = async on => { try { if (on && !wake && navigator.wakeLock) { wake = await navigator.wakeLock.request("screen"); wake.addEventListener("release", () => wake = null); } if (!on && wake) { await wake.release(); wake = null; } } catch(e){} };
-const questionParts = c => [[leadForSpeech(c), RATE.q], ...(c.ctx ? [["前提。", RATE.q], ...c.ctx.map(([l,t]) => [t, RATE.q])] : []), [(c.ctx ? "この肢。" : "") + c.q, RATE.q]];
+const questionParts = c => [[leadForSpeech(c), RATE.q], ...(c.ctx ? [["まず、前提となる記述です。", RATE.q], ...c.ctx.map(([l,t]) => [t, RATE.q]), ["では、次の記述です。", RATE.q]] : []), [c.q, RATE.q]];
+const answerWords = (c, ok) => `${ok === null ? "" : ok ? "正解です。" : "不正解です。"}${ok === null ? `答えは、${c.a ? "まる" : "ばつ"}です。` : ""}この記述は、${c.a ? "正しい" : "誤り"}です。`;
 const VOICES = [["off","なし","画面だけで解く"],["on","読み上げ","問題と解説を読み上げる。答えは画面で押す"],["auto","聞き流し","読み上げ→考える間→正解と解説→自動で次へ。記録は残らない"]];
 
 /* ---------- 目盛りの輪（科目のカード） ---------- */
@@ -348,6 +354,17 @@ function home(keep){
     <section><div class="sec"><b>音声</b><span>${TTS.ok ? "" : "この端末では読み上げが使えません"}</span></div>
       <div class="chips">${VOICES.map(([k,t]) => `<button class="chip" data-voice="${k}" aria-pressed="${p.voice===k}">${t}</button>`).join("")}</div>
       <p class="lede" style="margin-top:8px;font-size:.75rem">${VOICES.find(v => v[0]===p.voice)[2]}${p.voice==="auto" ? "。車では乗る前に始め、運転中は画面を見たり触ったりしないでください" : ""}</p>
+      ${p.voice !== "off" && TTS.ok ? `
+      <div class="vset">
+        <p class="label" style="margin-top:20px">声</p>
+        <select id="vname" class="vsel">${TTS.list().length ? TTS.list().map(v => `<option value="${esc(v.voiceURI)}" ${TTS.current() && TTS.current().voiceURI === v.voiceURI ? "selected" : ""}>${esc(TTS.label(v))}</option>`).join("") : `<option>読み込み中…</option>`}</select>
+        <p class="lede" style="margin-top:6px;font-size:.72rem">より自然な声は、iPhoneの「設定」→「アクセシビリティ」→「読み上げコンテンツ」→「声」→「日本語」で「拡張」や「プレミアム」の声を追加すると選べます（無料）。</p>
+        <p class="label" style="margin-top:18px">問題を読む速さ</p>
+        <div class="chips">${SPEEDS.map(([r,t]) => `<button class="chip" data-rq="${r}" aria-pressed="${+p.rq===r}">${t}</button>`).join("")}</div>
+        <p class="label" style="margin-top:18px">解説を読む速さ</p>
+        <div class="chips">${SPEEDS.map(([r,t]) => `<button class="chip" data-rw="${r}" aria-pressed="${+p.rw===r}">${t}</button>`).join("")}</div>
+        <button class="tool" id="vtest" style="margin-top:16px">▶ 試しに聞く</button>
+      </div>` : ""}
     </section>
     <section><div class="sec"><b>科目</b><span>タップで科目をしぼる</span></div>
       <div class="rail">${subjCards}</div>
@@ -397,6 +414,10 @@ function home(keep){
   $app.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { p.mode = b.dataset.mode; save(); home(true); });
   $app.querySelectorAll("[data-n]").forEach(b => b.onclick = () => { p.n = +b.dataset.n; save(); home(true); });
   $app.querySelectorAll("[data-voice]").forEach(b => b.onclick = () => { p.voice = b.dataset.voice; save(); home(true); });
+  $app.querySelectorAll("[data-rq]").forEach(b => b.onclick = () => { p.rq = +b.dataset.rq; save(); home(true); });
+  $app.querySelectorAll("[data-rw]").forEach(b => b.onclick = () => { p.rw = +b.dataset.rw; save(); home(true); });
+  const vn = $app.querySelector("#vname"); if (vn) vn.onchange = () => { p.vname = vn.value; save(); TTS.pick(); };
+  const vt = $app.querySelector("#vtest"); if (vt) vt.onclick = () => TTS.say([["これは、問題を読み上げる速さです。", RATE.q], ["こちらは、解説を読み上げる速さです。", RATE.why]]);
   const rs = $app.querySelector("#reset");
   let armed = 0;
   rs.onclick = () => {
@@ -448,10 +469,10 @@ async function autoPlay(c){
   const alive = () => view === "quiz" && run && run.i === i && !run.paused;
   const next = () => { run.paused = false; if (run.i < run.list.length - 1) { run.i++; ask(); } else finish(); };
   bar(false);
-  if (!(await TTS.say(questionParts(c))) || !alive()) return;
+  if (!(await TTS.say([...questionParts(c), ["まるか、ばつか。", RATE.q]])) || !alive()) return;
   await sleep(4000); if (!alive()) return;
   reveal(c, null);
-  if (!(await TTS.say([[`正解は、${c.a ? "まる" : "ばつ"}。`, RATE.q], [c.why, RATE.why]])) || !alive()) return;
+  if (!(await TTS.say([[answerWords(c, null), RATE.q], ["解説です。", RATE.q], [c.why, RATE.why]])) || !alive()) return;
   await sleep(1200); if (!alive()) return;
   run.log.push([c.id, null]);
   next();
@@ -462,7 +483,7 @@ function answer(c, said){
   h[ok?0:1]++; h[2] = ok?1:0; h[3] = Date.now(); store.h[c.id] = h; save();
   run.log.push([c.id, ok]);
   reveal(c, ok);
-  if (store.pref.voice === "on") TTS.say([[`${ok ? "正解" : "不正解"}。この肢は、${c.a ? "正しい" : "誤り"}。`, RATE.q], [c.why, RATE.why]]);
+  if (store.pref.voice === "on") TTS.say([[answerWords(c, ok), RATE.q], ["解説です。", RATE.q], [c.why, RATE.why]]);
 }
 /* 正誤と解説を出す。ok が null のときは聞き流し（答えていない） */
 function reveal(c, ok){
