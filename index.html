@@ -181,11 +181,11 @@ const KEY = "sm-ichimon-v1";
 const cards = DATA.cards, byId = {};
 cards.forEach(c => byId[c.id] = c);
 
-let store = {h:{}, star:{}, pref:{subj:[], unit:"", mode:"rand", n:20}};
+let store = {h:{}, star:{}, pref:{subj:[], unit:"", mode:"rand", n:20, voice:"off"}};
 function load(){
   try {
     const s = JSON.parse(localStorage.getItem(KEY) || "null");
-    if (s) store = {h: s.h || {}, star: s.star || {}, pref: Object.assign({subj:[], unit:"", mode:"rand", n:20}, s.pref)};
+    if (s) store = {h: s.h || {}, star: s.star || {}, pref: Object.assign({subj:[], unit:"", mode:"rand", n:20, voice:"off"}, s.pref)};
   } catch(e){}
   if (!Array.isArray(store.pref.subj)) store.pref.subj = [];
 }
@@ -214,6 +214,42 @@ const MODES = [
   ["star","★見直しリスト","自分で印をつけた肢", a => a.filter(c => store.star[c.id])],
 ];
 if (!MODES.some(m => m[0] === store.pref.mode)) store.pref.mode = "rand";
+
+/* ---------- 音声（読み上げ） ---------- */
+/* 読み上げ用に文を整える：タグと出典を外し、略語と記号を読みやすくする。車用の音声ファイル（build_audio.py）と同じ規則 */
+const READ = [[/<[^>]+>/g,""],[/[（(][^（）()]*(?:講義資料|協会の|別紙|p\.\s?\d)[^（）()]*[）)]/g,""],
+  [/J-?REIT/g,"ジェイリート"],[/REIT/g,"リート"],[/GK-TK/g,"ジーケー・ティーケー"],[/TMK/g,"ティーエムケー"],
+  [/\bAM\b/g,"エーエム"],[/\bPM\b/g,"ピーエム"],[/\bER\b/g,"イーアール"],[/[○◯]/g,"まる"],[/×/g,"ばつ"],[/(?<=[\d)）])\/(?=[\d(（])/g,"割る"],[/²/g,"の2乗"],[/³/g,"の3乗"],
+  [/(\d)\s*[–—~〜～]\s*(\d)/g,"$1から$2"],[/[〜～]/g,"から"],[/[／/→]/g,"、"],[/［([^］]+)］/g,"空欄$1"],[/\s+/g," "]];
+const forSpeech = t => READ.reduce((s, [a, b]) => s.replace(a, b), String(t)).trim();
+const sentences = t => forSpeech(t).split(/(?<=[。！？])/).map(x => x.trim()).filter(Boolean);
+/* 柱書の決まり文句（次の記述のうち…どれか）を外し、事例の説明が残るときだけ読む */
+const leadForSpeech = c => { const r = c.lead.replace(/[（(]問題\d+は[^）)]*[）)]/g, "").replace(/[、。]?\s*(?:次の|以下の|下記の)[^。]*?(?:どれか|いくつあるか)[。．]?\s*$/, ""); return r.length >= 40 ? r : ""; };
+const RATE = {q: 1.0, why: 1.22};  /* 解説だけやや速め */
+const TTS = (() => {
+  const ok = "speechSynthesis" in window; let voice = null, gen = 0;
+  const pick = () => { const vs = speechSynthesis.getVoices().filter(v => /^ja/i.test(v.lang));
+    voice = vs.find(v => /Kyoko|O-?ren|Otoya/i.test(v.name) && /Enhanced|Premium|拡張|高音質/i.test(v.name)) || vs.find(v => /Kyoko|O-?ren|Otoya/i.test(v.name)) || vs[0] || null; };
+  if (ok) { pick(); speechSynthesis.onvoiceschanged = pick; }
+  const one = (t, r, my) => new Promise(res => {
+    if (my !== gen) return res(false);
+    const u = new SpeechSynthesisUtterance(t); u.lang = "ja-JP"; if (voice) u.voice = voice; u.rate = r;
+    u.onend = () => res(my === gen); u.onerror = () => res(false); speechSynthesis.speak(u);
+  });
+  /* parts: [[文, 速さ], …]。止められたら false を返す */
+  async function say(parts){
+    if (!ok) return false; const my = ++gen; speechSynthesis.cancel();
+    for (const [t, r] of parts) for (const s of sentences(t)) { if (!(await one(s, r, my))) return false; }
+    return my === gen;
+  }
+  function stop(){ gen++; if (ok) speechSynthesis.cancel(); }
+  return {ok, say, stop, live: () => gen};
+})();
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+let wake = null;
+const holdScreen = async on => { try { if (on && !wake && navigator.wakeLock) { wake = await navigator.wakeLock.request("screen"); wake.addEventListener("release", () => wake = null); } if (!on && wake) { await wake.release(); wake = null; } } catch(e){} };
+const questionParts = c => [[leadForSpeech(c), RATE.q], ...(c.ctx ? [["前提。", RATE.q], ...c.ctx.map(([l,t]) => [t, RATE.q])] : []), [(c.ctx ? "この肢。" : "") + c.q, RATE.q]];
+const VOICES = [["off","なし","画面だけで解く"],["on","読み上げ","問題と解説を読み上げる。答えは画面で押す"],["auto","聞き流し","読み上げ→考える間→正解と解説→自動で次へ。記録は残らない"]];
 
 /* ---------- 目盛りの輪（科目のカード） ---------- */
 const SUNITS = {}; cards.forEach(c => { (SUNITS[c.subj] = SUNITS[c.subj] || new Set()).add(c.unit); });
@@ -265,7 +301,7 @@ function snip(text, ts){
 
 /* ---------- ホーム ---------- */
 function home(keep){
-  view = "home";
+  view = "home"; TTS.stop(); holdScreen(false);
   const p = store.pref;
   const subjCount = {}; cards.forEach(c => subjCount[c.subj] = (subjCount[c.subj]||0) + 1);
   const units = {}; cards.filter(c => !p.subj.length || p.subj.includes(c.subj)).forEach(c => units[c.unit] = units[c.unit] || [c.uname, 0, c.subj]);
@@ -309,6 +345,10 @@ function home(keep){
     <section><div class="sec"><b>1回の問題数</b></div>
       <div class="chips">${[10,20,50,0].map(n => `<button class="chip" data-n="${n}" aria-pressed="${p.n===n}">${n ? n+"問" : "全部"}</button>`).join("")}</div>
     </section>
+    <section><div class="sec"><b>音声</b><span>${TTS.ok ? "" : "この端末では読み上げが使えません"}</span></div>
+      <div class="chips">${VOICES.map(([k,t]) => `<button class="chip" data-voice="${k}" aria-pressed="${p.voice===k}">${t}</button>`).join("")}</div>
+      <p class="lede" style="margin-top:8px;font-size:.75rem">${VOICES.find(v => v[0]===p.voice)[2]}${p.voice==="auto" ? "。車では乗る前に始め、運転中は画面を見たり触ったりしないでください" : ""}</p>
+    </section>
     <section><div class="sec"><b>科目</b><span>タップで科目をしぼる</span></div>
       <div class="rail">${subjCards}</div>
       <p class="lede" style="margin-top:10px;font-size:.72rem">輪の白い目盛りは全部の肢を一度は解いた単元、青は今えらんでいる単元です。</p>
@@ -325,7 +365,7 @@ function home(keep){
   const $sq = document.getElementById("sq"), $sqx = document.getElementById("sqx"), $sres = document.getElementById("sres"), $filters = document.getElementById("filters");
   const renderSearch = () => {
     $sqx.hidden = !searchQ;
-    if (!searchQ) { $sres.innerHTML = ""; $filters.hidden = false; setBar(pool, "はじめる"); return; }
+    if (!searchQ) { $sres.innerHTML = ""; $filters.hidden = false; setBar(pool, p.voice === "auto" ? "聞き流しをはじめる" : "はじめる"); return; }
     const ts = terms(searchQ), hits = search(searchQ);
     $filters.hidden = true;
     $sres.innerHTML = `<div class="shead"><span><b>${hits.length}</b> 肢が見つかりました</span><span class="lede">タップで解説</span></div>
@@ -356,6 +396,7 @@ function home(keep){
   $app.querySelectorAll("[data-card]").forEach(b => b.onclick = () => { const sj = b.dataset.card; const on = p.subj.length === 1 && p.subj[0] === sj; p.subj = on ? [] : [sj]; p.unit = ""; save(); home(true); });
   $app.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { p.mode = b.dataset.mode; save(); home(true); });
   $app.querySelectorAll("[data-n]").forEach(b => b.onclick = () => { p.n = +b.dataset.n; save(); home(true); });
+  $app.querySelectorAll("[data-voice]").forEach(b => b.onclick = () => { p.voice = b.dataset.voice; save(); home(true); });
   const rs = $app.querySelector("#reset");
   let armed = 0;
   rs.onclick = () => {
@@ -373,7 +414,7 @@ function home(keep){
 
 /* ---------- 出題 ---------- */
 let run = null;
-function start(list){ run = {list, i:0, log:[]}; ask(); }
+function start(list){ run = {list, i:0, log:[], auto: store.pref.voice === "auto", paused: false}; if (run.auto) holdScreen(true); ask(); }
 function ask(){
   view = "quiz";
   const c = run.list[run.i];
@@ -387,20 +428,49 @@ function ask(){
     ${c.ctx ? `<div class="ctx"><p class="label">前提になる肢</p>${c.ctx.map(([l,t]) => `<p><b>${esc(l)}．</b>${esc(t)}</p>`).join("")}</div>` : ""}
     <div class="q" style="margin-top:6px"><span class="lab">${esc(c.lab)}</span>${esc(c.q)}</div>
     <div id="after"></div>`;
+  document.getElementById("quit").onclick = () => { TTS.stop(); holdScreen(false); (run.log.length ? finish() : home()); };
+  window.scrollTo(0,0);
+  if (run.auto) return autoPlay(c);
   setBarHTML(`<button class="ans o" data-a="1">${OXSVG.o(24)}正しい</button><button class="ans x" data-a="0">${OXSVG.x(22)}誤り</button>`);
   $bar.querySelectorAll("[data-a]").forEach(b => b.onclick = tap(() => answer(c, b.dataset.a === "1")));
-  document.getElementById("quit").onclick = () => run.log.length ? finish() : home();
-  window.scrollTo(0,0);
+  if (store.pref.voice === "on") TTS.say(questionParts(c));
+}
+/* 聞き流し：読み上げ→考える間（4秒）→正解と解説→次へ。答えは記録しない */
+async function autoPlay(c){
+  const i = run.i;
+  const bar = paused => {
+    setBarHTML(paused ? `<button class="big" id="resume">▶ 再開</button><button class="big ghost" id="skip">次へ</button>` : `<button class="big ghost" id="pause">一時停止</button><button class="big ghost" id="skip">次へ</button>`);
+    const pz = document.getElementById("pause"), rs = document.getElementById("resume");
+    if (pz) pz.onclick = tap(() => { run.paused = true; TTS.stop(); bar(true); });
+    if (rs) rs.onclick = tap(() => { run.paused = false; ask(); });
+    document.getElementById("skip").onclick = tap(() => { TTS.stop(); next(); });
+  };
+  const alive = () => view === "quiz" && run && run.i === i && !run.paused;
+  const next = () => { run.paused = false; if (run.i < run.list.length - 1) { run.i++; ask(); } else finish(); };
+  bar(false);
+  if (!(await TTS.say(questionParts(c))) || !alive()) return;
+  await sleep(4000); if (!alive()) return;
+  reveal(c, null);
+  if (!(await TTS.say([[`正解は、${c.a ? "まる" : "ばつ"}。`, RATE.q], [c.why, RATE.why]])) || !alive()) return;
+  await sleep(1200); if (!alive()) return;
+  run.log.push([c.id, null]);
+  next();
 }
 function answer(c, said){
   const ok = said === c.a;
   const h = store.h[c.id] || [0,0,0,0];
   h[ok?0:1]++; h[2] = ok?1:0; h[3] = Date.now(); store.h[c.id] = h; save();
   run.log.push([c.id, ok]);
+  reveal(c, ok);
+  if (store.pref.voice === "on") TTS.say([[`${ok ? "正解" : "不正解"}。この肢は、${c.a ? "正しい" : "誤り"}。`, RATE.q], [c.why, RATE.why]]);
+}
+/* 正誤と解説を出す。ok が null のときは聞き流し（答えていない） */
+function reveal(c, ok){
+  const h = store.h[c.id] || [0,0,0,0];
   const f = DATA.full[qkey(c)];
   document.getElementById("after").innerHTML = `
-    <div class="result ${ok?"ok":"ng"}">
-      <h2>${ok ? "正解" : "不正解"}<span>この肢は${c.a ? "○ 正しい" : "× 誤り"}</span></h2>
+    <div class="result ${ok === false ? "ng" : "ok"}">
+      <h2>${ok === null ? "答え" : ok ? "正解" : "不正解"}<span>この肢は${c.a ? "○ 正しい" : "× 誤り"}</span></h2>
       <p class="why">${c.why}</p>
     </div>
     <div class="tools">
@@ -416,8 +486,9 @@ function answer(c, said){
   if (sf) sf.onclick = () => { sf.remove();
     document.getElementById("fullbox").innerHTML = `<div class="full"><p>${esc(f.lead)}</p>${f.items.map(([l,t]) => `<p class="${l===c.lab?"cur":""}"><b>${esc(l)}．</b>${esc(t)}</p>`).join("")}</div>`; };
   const last = run.i === run.list.length - 1;
+  if (ok === null) { const r = document.querySelector(".result").getBoundingClientRect(); if (r.top > window.innerHeight - 160) window.scrollBy(0, r.top - Math.round(window.innerHeight * 0.3)); return; }
   setBarHTML(`<button class="big ${ok ? "ok" : "ng"}" id="next">${ok ? "○ 正解" : "× 不正解"}　—　${last ? "結果を見る" : "次へ"}</button>`);
-  document.getElementById("next").onclick = tap(() => { if (last) finish(); else { run.i++; ask(); } });
+  document.getElementById("next").onclick = tap(() => { TTS.stop(); if (last) finish(); else { run.i++; ask(); } });
   document.querySelector(".track i").style.width = `${(run.i+1)/run.list.length*100}%`;
   const r = document.querySelector(".result").getBoundingClientRect(), lim = window.innerHeight - $bar.offsetHeight;
   if (r.top > lim - 80) window.scrollBy(0, r.top - Math.round(window.innerHeight * 0.3));
@@ -425,8 +496,14 @@ function answer(c, said){
 
 /* ---------- 結果 ---------- */
 function finish(){
-  view = "result";
+  view = "result"; TTS.stop(); holdScreen(false);
   $app.className = "wrap";
+  if (run.auto) {
+    $app.innerHTML = `<h1>おつかれさまでした</h1><div class="score">${run.log.length}<small>肢</small><em>聞き流しました</em></div><p class="lede" style="margin-top:14px">聞き流しでは答えを押していないので、記録は変わっていません。</p>`;
+    setBarHTML(`<button class="big" id="home">メニューへ</button>`);
+    document.getElementById("home").onclick = tap(() => home());
+    window.scrollTo(0,0); return;
+  }
   const n = run.log.length, r = run.log.filter(x => x[1]).length;
   const wrong = run.log.filter(x => !x[1]).map(x => byId[x[0]]);
   $app.innerHTML = `
@@ -440,7 +517,7 @@ function finish(){
 }
 /* 別のタブやアプリで記録が増えていたら、戻ってきたときに読み直す（古い記録で上書きしない） */
 const refresh = () => { load(); if (view === "home") home(true); };
-document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") refresh(); });
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") { refresh(); if (run && run.auto && view === "quiz") holdScreen(true); } });
 window.addEventListener("pageshow", e => { if (e.persisted) refresh(); });
 window.__home = () => { if (view === "home") home(true); };
 home();
